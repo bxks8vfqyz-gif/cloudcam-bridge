@@ -14,27 +14,30 @@ class RingManager:
     def __init__(self, token_file: str = TOKEN_FILE):
         self.token_file = token_file
         self._refresh_token: Optional[str] = None
+        self._token: Optional[dict] = None
         self._load_token()
 
     def _load_token(self):
-        """Load saved refresh token from disk."""
+        """Load saved token from disk."""
         try:
             if os.path.exists(self.token_file):
                 with open(self.token_file) as f:
                     data = json.load(f)
-                self._refresh_token = data.get("refresh_token")
-                if self._refresh_token:
-                    logger.info("Ring: loaded saved refresh token")
+                if "refresh_token" in data:
+                    self._token = data
+                    self._refresh_token = data["refresh_token"]
+                    logger.info("Ring: loaded saved token")
         except Exception as e:
             logger.warning(f"Ring: failed to load token: {e}")
 
-    def _save_token(self):
-        """Persist refresh token to disk."""
+    def _save_token(self, token: dict = None):
+        """Persist token to disk."""
         try:
             Path(self.token_file).parent.mkdir(parents=True, exist_ok=True)
+            save_data = token if token else {"refresh_token": self._refresh_token}
             with open(self.token_file, "w") as f:
-                json.dump({"refresh_token": self._refresh_token}, f)
-            logger.info("Ring: saved refresh token")
+                json.dump(save_data, f)
+            logger.info("Ring: saved token")
         except Exception as e:
             logger.error(f"Ring: failed to save token: {e}")
 
@@ -54,8 +57,9 @@ class RingManager:
             import asyncio
 
             def _token_updated(token):
+                self._token = token
                 self._refresh_token = token["refresh_token"]
-                self._save_token()
+                self._save_token(token)
 
             auth = Auth("CloudCamBridge/2.0", None, _token_updated)
 
@@ -67,11 +71,10 @@ class RingManager:
                 return {"success": False, "needs_2fa": False, "error": f"Authentication failed: {e}"}
 
             # Token callback should have fired, but just in case
-            if not self._refresh_token:
-                token = auth.token
-                if token and "refresh_token" in token:
-                    self._refresh_token = token["refresh_token"]
-                    self._save_token()
+            if not self._refresh_token and auth.token:
+                self._token = auth.token
+                self._refresh_token = auth.token.get("refresh_token")
+                self._save_token(auth.token)
 
             return {"success": True, "needs_2fa": False, "error": None}
 
@@ -91,13 +94,14 @@ class RingManager:
             import asyncio
 
             def _token_updated(token):
+                self._token = token
                 self._refresh_token = token["refresh_token"]
-                self._save_token()
+                self._save_token(token)
 
-            auth = Auth("CloudCamBridge/2.0", {"refresh_token": self._refresh_token}, _token_updated)
-            await auth.async_fetch_token()
+            auth = Auth("CloudCamBridge/2.0", self._token or {"refresh_token": self._refresh_token}, _token_updated)
 
             ring = Ring(auth)
+            await ring.async_create_session()
             await ring.async_update_data()
 
             cameras = []
