@@ -8,7 +8,6 @@ url: https://github.com/bxks8vfqyz-gif/cloudcam-bridge
 arch:
   - aarch64
   - amd64
-  - armv7
 startup: application
 boot: auto
 host_network: true
