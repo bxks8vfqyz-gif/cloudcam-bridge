@@ -44,7 +44,7 @@ jobs:
           context: cloudcam-bridge
           platforms: linux/${{ matrix.arch == 'aarch64' && 'arm64' || matrix.arch == 'armv7' && 'arm/v7' || 'amd64' }}
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ghcr.io/${{ github.repository_owner }}/cloudcam-bridge/${{ matrix.arch }}:latest
+          tags: ghcr.io/${{ github.repository_owner }}/${{ matrix.arch }}-cloudcam-bridge:latest
           build-args: |
             BUILD_FROM=ghcr.io/home-assistant/${{ matrix.arch }}-base:latest
             TARGETARCH=${{ matrix.arch }}

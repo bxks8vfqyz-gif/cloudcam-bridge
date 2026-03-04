@@ -30,4 +30,4 @@ schema:
 map:
   - addon_config:rw
 
-image: ghcr.io/bxks8vfqyz-gif/cloudcam-bridge/{arch}
+image: ghcr.io/bxks8vfqyz-gif/{arch}-cloudcam-bridge
