@@ -23,13 +23,12 @@ COPY frontend/package.json frontend/package-lock.json* /app/frontend/
 WORKDIR /app/frontend
 RUN npm install --production=false && npm cache clean --force
 COPY frontend/ /app/frontend/
-RUN npm run build && rm -rf node_modules src package.json package-lock.json
+RUN npm run build && rm -rf node_modules src package.json package-lock.json vite.config.js
 
 COPY backend/ /app/backend/
 
-COPY run.sh /run.sh
+COPY run.sh /
 RUN chmod +x /run.sh
 
 RUN mkdir -p /data
 WORKDIR /app
-CMD ["/run.sh"]
