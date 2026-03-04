@@ -155,6 +155,29 @@ function ONVIFPanel({ info, onClose }) {
   )
 }
 
+/* ── Form Input (defined outside to prevent re-mount on each render) ── */
+
+function FormField({ label, value, onChange, placeholder }) {
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>{label}</label>
+      <textarea
+        value={value} onChange={onChange} placeholder={placeholder}
+        rows={1}
+        style={{
+          ...styles.input,
+          resize: 'none', overflow: 'hidden',
+          fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+          lineHeight: '1.4',
+        }}
+        onFocus={e => e.target.style.boxShadow = '0 0 0 3px rgba(0,122,255,0.25)'}
+        onBlur={e => e.target.style.boxShadow = 'none'}
+        onKeyDown={e => { if (e.key === 'Enter') e.preventDefault() }}
+      />
+    </div>
+  )
+}
+
 /* ── Camera Add/Edit Modal ────────────────────────────────────────── */
 
 function CameraModal({ existing, onSave, onClose }) {
@@ -177,18 +200,6 @@ function CameraModal({ existing, onSave, onClose }) {
     else setError(res.detail || 'Failed to save camera')
   }
 
-  const InputField = ({ label, keyName, placeholder, type = 'text' }) => (
-    <div style={{ marginBottom: 16 }}>
-      <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>{label}</label>
-      <input
-        type={type} value={form[keyName]} onChange={f(keyName)} placeholder={placeholder}
-        style={{ ...styles.input }}
-        onFocus={e => e.target.style.boxShadow = '0 0 0 3px rgba(0,122,255,0.25)'}
-        onBlur={e => e.target.style.boxShadow = 'none'}
-      />
-    </div>
-  )
-
   return (
     <div style={styles.overlay} onClick={onClose}>
       <div style={styles.modal} onClick={e => e.stopPropagation()}>
@@ -203,15 +214,19 @@ function CameraModal({ existing, onSave, onClose }) {
         </div>
 
         {/* Form */}
-        <div style={{ padding: '0 24px' }}>
-          <InputField label="Name" keyName="name" placeholder="e.g. Front Door" />
-          <InputField label="RTSP URL" keyName="rtsp_url" placeholder="rtsp://192.168.1.x:8554/camera-name" />
+        <form autoComplete="off" onSubmit={e => { e.preventDefault(); handleSave() }} style={{ padding: '0 24px' }}>
+          {/* Hidden honeypot fields to trick Safari autofill */}
+          <input type="text" name="fakeusernameremembered" style={{ position: 'absolute', opacity: 0, height: 0, width: 0, padding: 0, border: 'none' }} tabIndex={-1} />
+          <input type="password" name="fakepasswordremembered" style={{ position: 'absolute', opacity: 0, height: 0, width: 0, padding: 0, border: 'none' }} tabIndex={-1} />
+          <FormField label="Name" value={form.name} onChange={f('name')} placeholder="e.g. Front Door" />
+          <FormField label="RTSP URL" value={form.rtsp_url} onChange={f('rtsp_url')} placeholder="rtsp://192.168.1.x:8554/camera-name" />
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
             {[['Width', 'width', '1920'], ['Height', 'height', '1080'], ['FPS', 'framerate', '15']].map(([label, key, ph]) => (
               <div key={key}>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>{label}</label>
                 <input type="number" value={form[key]} onChange={f(key)} placeholder={ph}
+                  autoComplete="off"
                   style={styles.input}
                   onFocus={e => e.target.style.boxShadow = '0 0 0 3px rgba(0,122,255,0.25)'}
                   onBlur={e => e.target.style.boxShadow = 'none'}
@@ -239,7 +254,7 @@ function CameraModal({ existing, onSave, onClose }) {
               <p style={{ fontSize: 13, color: 'var(--red)', fontWeight: 500 }}>{error}</p>
             </div>
           )}
-        </div>
+        </form>
 
         {/* Footer */}
         <div style={{ padding: '20px 24px 24px', display: 'flex', gap: 10 }}>
