@@ -1,5 +1,5 @@
 name: CloudCam Bridge
-version: "2.0.0"
+version: "2.1.0"
 slug: cloudcam-bridge
 description: >
   Converts local RTSP streams (from Scrypted or any source) into ONVIF cameras
