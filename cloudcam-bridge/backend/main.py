@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from typing import Optional
 from go2rtc_manager import Go2RTCManager
 from camera_store import CameraStore, Camera
+from scrypted_discover import discover_cameras
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -16,6 +17,8 @@ go2rtc = None; store = None
 HOST_IP = "127.0.0.1"
 ONVIF_USERNAME = "admin"
 ONVIF_PASSWORD = "cloudcam123"
+SCRYPTED_ADDRESS = ""
+SCRYPTED_TOKEN = ""
 _onvif_procs = {}
 
 @asynccontextmanager
@@ -108,6 +111,26 @@ async def _stop_onvif(camera_id):
         try: proc.terminate(); await asyncio.wait_for(proc.wait(), timeout=5)
         except: proc.kill()
 
+@app.get("/api/discover/scrypted")
+async def discover_scrypted():
+    if not SCRYPTED_ADDRESS or not SCRYPTED_TOKEN:
+        return {"cameras": [], "error": "Scrypted not configured. Set address and token in add-on Configuration tab."}
+    try:
+        existing_urls = {c.rtsp_url for c in store.all()}
+        cams = await discover_cameras(SCRYPTED_ADDRESS, SCRYPTED_TOKEN)
+        for c in cams:
+            c['already_added'] = c.get('rtsp_url', '') in existing_urls
+        return {"cameras": cams}
+    except ValueError as e:
+        return {"cameras": [], "error": str(e)}
+    except Exception as e:
+        logger.error(f"Scrypted discovery error: {e}")
+        return {"cameras": [], "error": f"Discovery failed: {e}"}
+
+@app.get("/api/scrypted/status")
+async def scrypted_status():
+    return {"configured": bool(SCRYPTED_ADDRESS and SCRYPTED_TOKEN), "address": SCRYPTED_ADDRESS}
+
 FRONTEND = "/app/frontend/dist"
 if os.path.exists(FRONTEND):
     app.mount("/assets", StaticFiles(directory=f"{FRONTEND}/assets"), name="assets")
@@ -124,6 +147,8 @@ if __name__ == "__main__":
     parser.add_argument("--onvif-username", default="admin")
     parser.add_argument("--onvif-password", default="cloudcam123")
     parser.add_argument("--log-level", default="info")
+    parser.add_argument("--scrypted-address", default="")
+    parser.add_argument("--scrypted-token", default="")
     args = parser.parse_args()
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -132,6 +157,8 @@ if __name__ == "__main__":
     logger.info(f"Host IP: {HOST_IP}")
     ONVIF_USERNAME = args.onvif_username
     ONVIF_PASSWORD = args.onvif_password
+    SCRYPTED_ADDRESS = args.scrypted_address
+    SCRYPTED_TOKEN = args.scrypted_token
     go2rtc = Go2RTCManager(args.go2rtc_config)
     store = CameraStore(args.data_file)
     uvicorn.run(app, host=args.host, port=args.port, log_level=args.log_level.lower())

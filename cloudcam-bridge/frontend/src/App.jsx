@@ -23,6 +23,8 @@ const EditIcon = (p) => <I {...p} d={<><path d="M17 3a2.83 2.83 0 114 4L7.5 20.5
 const ShieldIcon = (p) => <I {...p} d={<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>} />
 const StreamIcon = (p) => <I {...p} d={<><path d="M2 8l2 2-2 2"/><path d="M22 8l-2 2 2 2"/><line x1="9" y1="20" x2="15" y2="4"/></>} />
 const ServerIcon = (p) => <I {...p} d={<><rect x="2" y="2" width="20" height="8" rx="1.5"/><rect x="2" y="14" width="20" height="8" rx="1.5"/><circle cx="6" cy="6" r="1" fill={p.color||'currentColor'} stroke="none"/><circle cx="6" cy="18" r="1" fill={p.color||'currentColor'} stroke="none"/></>} />
+const SearchIcon = (p) => <I {...p} d={<><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></>} />
+const DownloadIcon = (p) => <I {...p} d={<><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></>} />
 
 /* ── Copy Button ──────────────────────────────────────────────────── */
 
@@ -326,6 +328,145 @@ function CameraRow({ camera, onDelete, onEdit, onONVIF, isLast }) {
   )
 }
 
+/* ── Scrypted Discovery ──────────────────────────────────────────── */
+
+function ScryptedDiscovery({ onAdd, existingCameras }) {
+  const [discovered, setDiscovered] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [configured, setConfigured] = useState(false)
+  const [adding, setAdding] = useState({})
+
+  useEffect(() => {
+    get('/scrypted/status').then(r => setConfigured(r?.configured || false)).catch(() => {})
+  }, [])
+
+  const handleDiscover = async () => {
+    setLoading(true); setError(''); setDiscovered([])
+    const res = await get('/discover/scrypted')
+    setLoading(false)
+    if (res.error) setError(res.error)
+    if (res.cameras) setDiscovered(res.cameras)
+  }
+
+  const handleAdd = async (cam) => {
+    if (!cam.rtsp_url) return setError(`No RTSP URL found for "${cam.name}". Add it manually with the RTSP URL from Scrypted.`)
+    setAdding(p => ({ ...p, [cam.id]: true }))
+    const body = { name: cam.name, rtsp_url: cam.rtsp_url, width: cam.width || 1920, height: cam.height || 1080, framerate: cam.framerate || 15 }
+    const res = await post('/cameras', body)
+    setAdding(p => ({ ...p, [cam.id]: false }))
+    if (res.camera) {
+      setDiscovered(prev => prev.map(c => c.id === cam.id ? { ...c, already_added: true } : c))
+      onAdd(res.camera, res.onvif)
+    } else {
+      setError(res.detail || 'Failed to add camera')
+    }
+  }
+
+  if (!configured) return null
+
+  return (
+    <div style={{
+      background: 'var(--bg-card)', border: '1px solid var(--border)',
+      borderRadius: 'var(--radius-md)', overflow: 'hidden',
+      marginBottom: 16, animation: 'fadeIn 0.3s ease 0.02s both',
+    }}>
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: '12px 16px', borderBottom: discovered.length > 0 ? '1px solid var(--border)' : 'none',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{
+            width: 28, height: 28, borderRadius: 6,
+            background: 'rgba(167,139,250,0.12)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <SearchIcon size={14} color="#a78bfa" />
+          </div>
+          <div>
+            <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Scrypted Cameras</h3>
+            <p style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 1 }}>Auto-discover cameras from your Scrypted server</p>
+          </div>
+        </div>
+        <button onClick={handleDiscover} disabled={loading} style={{
+          display: 'flex', alignItems: 'center', gap: 5,
+          padding: '6px 12px', background: loading ? 'rgba(167,139,250,0.2)' : 'rgba(167,139,250,0.12)',
+          color: '#a78bfa', border: '1px solid rgba(167,139,250,0.2)',
+          borderRadius: 'var(--radius-sm)', cursor: loading ? 'not-allowed' : 'pointer',
+          fontWeight: 600, fontSize: 12, transition: 'all 0.15s',
+        }}>
+          <SearchIcon size={13} color="#a78bfa" />
+          {loading ? 'Scanning...' : 'Discover'}
+        </button>
+      </div>
+
+      {error && (
+        <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)' }}>
+          <div style={{
+            padding: '8px 12px', background: 'var(--red-subtle)',
+            borderRadius: 'var(--radius-sm)', borderLeft: '3px solid var(--red)',
+          }}>
+            <p style={{ fontSize: 12, color: '#ff6b6b' }}>{error}</p>
+          </div>
+        </div>
+      )}
+
+      {discovered.map((cam, i) => (
+        <div key={cam.id} style={{
+          display: 'flex', alignItems: 'center', gap: 12,
+          padding: '10px 16px',
+          borderBottom: i < discovered.length - 1 ? '1px solid var(--border)' : 'none',
+        }}>
+          <div style={{
+            width: 32, height: 32, borderRadius: 6,
+            background: cam.already_added ? 'var(--green-subtle)' : 'rgba(167,139,250,0.08)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            <VideoIcon size={15} color={cam.already_added ? 'var(--green)' : '#a78bfa'} />
+          </div>
+
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{cam.name}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-tertiary)', display: 'flex', gap: 6 }}>
+              <span>{cam.type}</span>
+              {cam.rtsp_url && <>
+                <span style={{ color: 'var(--text-muted)' }}>/</span>
+                <span style={{ color: 'var(--green)' }}>RTSP available</span>
+              </>}
+              {!cam.rtsp_url && <>
+                <span style={{ color: 'var(--text-muted)' }}>/</span>
+                <span style={{ color: 'var(--text-muted)' }}>No RTSP URL</span>
+              </>}
+            </div>
+          </div>
+
+          {cam.already_added ? (
+            <span style={{
+              fontSize: 11, fontWeight: 600, color: 'var(--green)',
+              padding: '4px 10px', background: 'var(--green-subtle)',
+              borderRadius: 'var(--radius-sm)',
+            }}>
+              <CheckIcon size={12} /> Added
+            </span>
+          ) : (
+            <button onClick={() => handleAdd(cam)} disabled={adding[cam.id]} style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              padding: '5px 10px', background: 'var(--accent)',
+              color: 'white', border: 'none', borderRadius: 'var(--radius-sm)',
+              cursor: adding[cam.id] ? 'not-allowed' : 'pointer',
+              fontWeight: 600, fontSize: 11, opacity: adding[cam.id] ? 0.6 : 1,
+              transition: 'opacity 0.15s',
+            }}>
+              <PlusIcon size={12} color="white" />
+              {adding[cam.id] ? 'Adding...' : 'Add'}
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 /* ── Main App ─────────────────────────────────────────────────────── */
 
 export default function App() {
@@ -410,6 +551,9 @@ export default function App() {
             </div>
           ))}
         </div>
+
+        {/* Scrypted Discovery */}
+        <ScryptedDiscovery onAdd={handleSave} existingCameras={cameras} />
 
         {/* Camera list section */}
         <div style={{

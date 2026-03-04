@@ -22,11 +22,15 @@ options:
   log_level: info
   onvif_username: "admin"
   onvif_password: "cloudcam123"
+  scrypted_address: ""
+  scrypted_token: ""
 
 schema:
   log_level: list(trace|debug|info|notice|warning|error|fatal)
   onvif_username: str
   onvif_password: str
+  scrypted_address: str?
+  scrypted_token: str?
 
 map:
   - addon_config:rw

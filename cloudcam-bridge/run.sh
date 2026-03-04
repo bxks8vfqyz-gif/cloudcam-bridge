@@ -9,6 +9,8 @@ GO2RTC_CONFIG="${CONFIG_DIR}/go2rtc.yaml"
 ONVIF_USERNAME=$(jq -r '.onvif_username' "$OPTIONS_FILE")
 ONVIF_PASSWORD=$(jq -r '.onvif_password' "$OPTIONS_FILE")
 LOG_LEVEL=$(jq -r '.log_level' "$OPTIONS_FILE")
+SCRYPTED_ADDRESS=$(jq -r '.scrypted_address // empty' "$OPTIONS_FILE")
+SCRYPTED_TOKEN=$(jq -r '.scrypted_token // empty' "$OPTIONS_FILE")
 
 [ ! -f "${DATA_FILE}" ] && echo '{"cameras":[]}' > "${DATA_FILE}"
 
@@ -27,4 +29,6 @@ exec python3 /app/backend/main.py \
     --host "0.0.0.0" --port 8099 \
     --onvif-username "${ONVIF_USERNAME}" \
     --onvif-password "${ONVIF_PASSWORD}" \
-    --log-level "${LOG_LEVEL}"
+    --log-level "${LOG_LEVEL}" \
+    --scrypted-address "${SCRYPTED_ADDRESS}" \
+    --scrypted-token "${SCRYPTED_TOKEN}"
