@@ -1,15 +1,14 @@
-#!/usr/bin/with-contenv bashio
+#!/bin/bash
 set -e
 
-CONFIG_DIR="/addon_configs/cloudcam-bridge"
+OPTIONS_FILE="/data/options.json"
+CONFIG_DIR="/data"
 DATA_FILE="${CONFIG_DIR}/cameras.json"
 GO2RTC_CONFIG="${CONFIG_DIR}/go2rtc.yaml"
 
-ONVIF_USERNAME=$(bashio::config 'onvif_username')
-ONVIF_PASSWORD=$(bashio::config 'onvif_password')
-LOG_LEVEL=$(bashio::config 'log_level')
-
-mkdir -p "${CONFIG_DIR}"
+ONVIF_USERNAME=$(jq -r '.onvif_username' "$OPTIONS_FILE")
+ONVIF_PASSWORD=$(jq -r '.onvif_password' "$OPTIONS_FILE")
+LOG_LEVEL=$(jq -r '.log_level' "$OPTIONS_FILE")
 
 [ ! -f "${DATA_FILE}" ] && echo '{"cameras":[]}' > "${DATA_FILE}"
 
@@ -17,11 +16,11 @@ if [ ! -f "${GO2RTC_CONFIG}" ]; then
   printf 'api:\n  listen: 127.0.0.1:1984\nrtsp:\n  listen: 127.0.0.1:8554\nlog:\n  level: warn\nstreams: {}\n' > "${GO2RTC_CONFIG}"
 fi
 
-bashio::log.info "Starting go2rtc..."
+echo "[INFO] Starting go2rtc..."
 go2rtc -config "${GO2RTC_CONFIG}" &
 sleep 2
 
-bashio::log.info "Starting CloudCam Bridge..."
+echo "[INFO] Starting CloudCam Bridge..."
 exec python3 /app/backend/main.py \
     --data-file "${DATA_FILE}" \
     --go2rtc-config "${GO2RTC_CONFIG}" \
