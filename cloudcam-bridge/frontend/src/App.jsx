@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 
-const get   = p    => fetch('/api'+p).then(r=>r.json())
-const post  = (p,b)=> fetch('/api'+p,{method:'POST',  headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).then(r=>r.json())
-const del   = p    => fetch('/api'+p,{method:'DELETE'}).then(r=>r.json())
-const patch = (p,b)=> fetch('/api'+p,{method:'PATCH', headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).then(r=>r.json())
+const get   = p    => fetch('api'+p).then(r=>r.json())
+const post  = (p,b)=> fetch('api'+p,{method:'POST',  headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).then(r=>r.json())
+const del   = p    => fetch('api'+p,{method:'DELETE'}).then(r=>r.json())
+const patch = (p,b)=> fetch('api'+p,{method:'PATCH', headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).then(r=>r.json())
 
 /* ── Icons ────────────────────────────────────────────────────────── */
 
