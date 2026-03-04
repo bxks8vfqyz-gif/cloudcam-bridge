@@ -1,0 +1,34 @@
+name: CloudCam Bridge
+version: "2.0.0"
+slug: cloudcam-bridge
+description: >
+  Converts local RTSP streams (from Scrypted or any source) into ONVIF cameras
+  that UniFi Protect can record and display. 100% local — no cloud, no login.
+url: https://github.com/bxks8vfqyz-gif/cloudcam-bridge
+arch:
+  - aarch64
+  - amd64
+  - armv7
+startup: application
+boot: auto
+host_network: true
+privileged: false
+ingress: true
+ingress_port: 8080
+panel_icon: mdi:cctv
+panel_title: CloudCam Bridge
+
+options:
+  log_level: info
+  onvif_username: "admin"
+  onvif_password: "cloudcam123"
+
+schema:
+  log_level: list(trace|debug|info|notice|warning|error|fatal)
+  onvif_username: str
+  onvif_password: str
+
+map:
+  - addon_config:rw
+
+image: ghcr.io/bxks8vfqyz-gif/cloudcam-bridge/{arch}
