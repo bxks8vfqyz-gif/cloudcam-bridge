@@ -25,6 +25,8 @@ const StreamIcon = (p) => <I {...p} d={<><path d="M2 8l2 2-2 2"/><path d="M22 8l
 const ServerIcon = (p) => <I {...p} d={<><rect x="2" y="2" width="20" height="8" rx="1.5"/><rect x="2" y="14" width="20" height="8" rx="1.5"/><circle cx="6" cy="6" r="1" fill={p.color||'currentColor'} stroke="none"/><circle cx="6" cy="18" r="1" fill={p.color||'currentColor'} stroke="none"/></>} />
 const SearchIcon = (p) => <I {...p} d={<><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></>} />
 const DownloadIcon = (p) => <I {...p} d={<><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></>} />
+const RingIcon = (p) => <I {...p} d={<><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill={p.color||'currentColor'} stroke="none"/></>} />
+const LockIcon = (p) => <I {...p} d={<><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></>} />
 
 /* ── Copy Button ──────────────────────────────────────────────────── */
 
@@ -467,6 +469,250 @@ function ScryptedDiscovery({ onAdd, existingCameras }) {
   )
 }
 
+/* ── Ring Discovery ──────────────────────────────────────────────── */
+
+function RingDiscovery({ onAdd }) {
+  const [authenticated, setAuthenticated] = useState(false)
+  const [discovered, setDiscovered] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [discovering, setDiscovering] = useState(false)
+  const [error, setError] = useState('')
+  const [showAuth, setShowAuth] = useState(false)
+  const [authForm, setAuthForm] = useState({ username: '', password: '', twofactor_code: '' })
+  const [needs2fa, setNeeds2fa] = useState(false)
+  const [adding, setAdding] = useState({})
+
+  useEffect(() => {
+    get('/ring/status').then(r => setAuthenticated(r?.authenticated || false)).catch(() => {})
+  }, [])
+
+  const handleAuth = async () => {
+    setLoading(true); setError('')
+    const res = await post('/ring/auth', authForm)
+    setLoading(false)
+    if (res.success) {
+      setAuthenticated(true); setShowAuth(false); setNeeds2fa(false)
+      setAuthForm({ username: '', password: '', twofactor_code: '' })
+    } else if (res.needs_2fa) {
+      setNeeds2fa(true); setError(res.error || '2FA code required')
+    } else {
+      setError(res.error || 'Authentication failed')
+    }
+  }
+
+  const handleDiscover = async () => {
+    setDiscovering(true); setError(''); setDiscovered([])
+    const res = await get('/ring/discover')
+    setDiscovering(false)
+    if (res.error) setError(res.error)
+    if (res.cameras) setDiscovered(res.cameras)
+  }
+
+  const handleAdd = async (cam) => {
+    setAdding(p => ({ ...p, [cam.device_id]: true }))
+    const body = { name: cam.name, source_type: 'ring', device_id: cam.device_id, width: 1920, height: 1080, framerate: 15 }
+    const res = await post('/cameras', body)
+    setAdding(p => ({ ...p, [cam.device_id]: false }))
+    if (res.camera) {
+      setDiscovered(prev => prev.map(c => c.device_id === cam.device_id ? { ...c, already_added: true } : c))
+      onAdd(res.camera, res.onvif)
+    } else {
+      setError(res.detail || 'Failed to add camera')
+    }
+  }
+
+  const handleDisconnect = async () => {
+    await post('/ring/disconnect', {})
+    setAuthenticated(false); setDiscovered([])
+  }
+
+  const af = k => e => setAuthForm(p => ({ ...p, [k]: e.target.value }))
+
+  const inputStyle = {
+    width: '100%', padding: '9px 12px',
+    background: 'var(--bg-input)', border: '1px solid var(--border-input)',
+    borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)',
+    fontSize: 13, outline: 'none', fontFamily: 'var(--font)',
+  }
+
+  return (
+    <div style={{
+      background: 'var(--bg-card)', border: '1px solid var(--border)',
+      borderRadius: 'var(--radius-md)', overflow: 'hidden',
+      marginBottom: 16, animation: 'fadeIn 0.3s ease 0.03s both',
+    }}>
+      {/* Header */}
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: '12px 16px',
+        borderBottom: (discovered.length > 0 || showAuth) ? '1px solid var(--border)' : 'none',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{
+            width: 28, height: 28, borderRadius: 6,
+            background: 'rgba(56,189,248,0.12)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <RingIcon size={14} color="#38bdf8" />
+          </div>
+          <div>
+            <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Ring Cameras</h3>
+            <p style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 1 }}>
+              {authenticated ? 'Connected to Ring' : 'Connect your Ring account to discover cameras'}
+            </p>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {authenticated ? (
+            <>
+              <button onClick={handleDiscover} disabled={discovering} style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: '6px 12px', background: discovering ? 'rgba(56,189,248,0.2)' : 'rgba(56,189,248,0.12)',
+                color: '#38bdf8', border: '1px solid rgba(56,189,248,0.2)',
+                borderRadius: 'var(--radius-sm)', cursor: discovering ? 'not-allowed' : 'pointer',
+                fontWeight: 600, fontSize: 12, transition: 'all 0.15s',
+              }}>
+                <SearchIcon size={13} color="#38bdf8" />
+                {discovering ? 'Scanning...' : 'Discover'}
+              </button>
+              <button onClick={handleDisconnect} style={{
+                padding: '6px 10px', background: 'transparent',
+                border: '1px solid rgba(244,67,54,0.2)', borderRadius: 'var(--radius-sm)',
+                cursor: 'pointer', color: 'var(--red)', fontSize: 11, fontWeight: 600,
+              }}>
+                Disconnect
+              </button>
+            </>
+          ) : (
+            <button onClick={() => setShowAuth(true)} style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              padding: '6px 12px', background: 'rgba(56,189,248,0.12)',
+              color: '#38bdf8', border: '1px solid rgba(56,189,248,0.2)',
+              borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+              fontWeight: 600, fontSize: 12, transition: 'all 0.15s',
+            }}>
+              <LockIcon size={13} color="#38bdf8" />
+              Connect Ring
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Auth form */}
+      {showAuth && !authenticated && (
+        <div style={{ padding: '16px' }}>
+          <form autoComplete="off" onSubmit={e => { e.preventDefault(); handleAuth() }}>
+            <input type="text" name="fakeuser" style={{ position: 'absolute', opacity: 0, height: 0, width: 0, padding: 0, border: 'none' }} tabIndex={-1} />
+            <input type="password" name="fakepass" style={{ position: 'absolute', opacity: 0, height: 0, width: 0, padding: 0, border: 'none' }} tabIndex={-1} />
+
+            <div style={{ marginBottom: 10 }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Email</label>
+              <input type="text" value={authForm.username} onChange={af('username')} placeholder="ring@example.com" autoComplete="off" style={inputStyle}
+                onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
+            </div>
+            <div style={{ marginBottom: 10 }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Password</label>
+              <input type="password" value={authForm.password} onChange={af('password')} placeholder="Ring password" autoComplete="new-password" style={inputStyle}
+                onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
+            </div>
+            {needs2fa && (
+              <div style={{ marginBottom: 10 }}>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>2FA Code</label>
+                <input type="text" value={authForm.twofactor_code} onChange={af('twofactor_code')} placeholder="6-digit code" autoComplete="off" style={inputStyle}
+                  onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+              <button type="button" onClick={() => { setShowAuth(false); setError(''); setNeeds2fa(false) }} style={{
+                flex: 1, padding: '8px 14px', background: 'transparent',
+                border: '1px solid var(--border-input)', borderRadius: 'var(--radius-sm)',
+                cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 500,
+              }}>Cancel</button>
+              <button type="submit" disabled={loading || !authForm.username || !authForm.password} style={{
+                flex: 2, padding: '8px 14px', background: loading ? 'rgba(56,189,248,0.5)' : '#38bdf8',
+                color: 'white', border: 'none', borderRadius: 'var(--radius-sm)',
+                cursor: loading ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 12,
+                opacity: (!authForm.username || !authForm.password) ? 0.5 : 1,
+              }}>
+                {loading ? 'Connecting...' : (needs2fa ? 'Verify Code' : 'Sign In')}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Error */}
+      {error && (
+        <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)' }}>
+          <div style={{
+            padding: '8px 12px', background: 'var(--red-subtle)',
+            borderRadius: 'var(--radius-sm)', borderLeft: '3px solid var(--red)',
+          }}>
+            <p style={{ fontSize: 12, color: '#ff6b6b' }}>{error}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Discovered cameras */}
+      {discovered.map((cam, i) => (
+        <div key={cam.device_id} style={{
+          display: 'flex', alignItems: 'center', gap: 12,
+          padding: '10px 16px',
+          borderBottom: i < discovered.length - 1 ? '1px solid var(--border)' : 'none',
+        }}>
+          <div style={{
+            width: 32, height: 32, borderRadius: 6,
+            background: cam.already_added ? 'var(--green-subtle)' : 'rgba(56,189,248,0.08)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            {cam.type === 'doorbell'
+              ? <RingIcon size={15} color={cam.already_added ? 'var(--green)' : '#38bdf8'} />
+              : <VideoIcon size={15} color={cam.already_added ? 'var(--green)' : '#38bdf8'} />
+            }
+          </div>
+
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{cam.name}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-tertiary)', display: 'flex', gap: 6 }}>
+              <span style={{ textTransform: 'capitalize' }}>{cam.type}</span>
+              {cam.model && <>
+                <span style={{ color: 'var(--text-muted)' }}>/</span>
+                <span>{cam.model}</span>
+              </>}
+              {cam.battery != null && <>
+                <span style={{ color: 'var(--text-muted)' }}>/</span>
+                <span>{cam.battery}% battery</span>
+              </>}
+            </div>
+          </div>
+
+          {cam.already_added ? (
+            <span style={{
+              fontSize: 11, fontWeight: 600, color: 'var(--green)',
+              padding: '4px 10px', background: 'var(--green-subtle)',
+              borderRadius: 'var(--radius-sm)',
+            }}>
+              <CheckIcon size={12} /> Added
+            </span>
+          ) : (
+            <button onClick={() => handleAdd(cam)} disabled={adding[cam.device_id]} style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              padding: '5px 10px', background: 'var(--accent)',
+              color: 'white', border: 'none', borderRadius: 'var(--radius-sm)',
+              cursor: adding[cam.device_id] ? 'not-allowed' : 'pointer',
+              fontWeight: 600, fontSize: 11, opacity: adding[cam.device_id] ? 0.6 : 1,
+              transition: 'opacity 0.15s',
+            }}>
+              <PlusIcon size={12} color="white" />
+              {adding[cam.device_id] ? 'Adding...' : 'Add'}
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 /* ── Main App ─────────────────────────────────────────────────────── */
 
 export default function App() {
@@ -554,6 +800,9 @@ export default function App() {
 
         {/* Scrypted Discovery */}
         <ScryptedDiscovery onAdd={handleSave} existingCameras={cameras} />
+
+        {/* Ring Discovery */}
+        <RingDiscovery onAdd={handleSave} />
 
         {/* Camera list section */}
         <div style={{

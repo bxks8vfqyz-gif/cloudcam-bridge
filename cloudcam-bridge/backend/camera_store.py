@@ -15,6 +15,8 @@ class Camera:
     width: int = 1920
     height: int = 1080
     framerate: int = 15
+    source_type: str = "rtsp"      # "rtsp" or "ring"
+    device_id: str = ""            # Ring device ID (empty for RTSP cameras)
 
     def to_dict(self):
         return asdict(self)
@@ -50,13 +52,15 @@ class CameraStore:
         return self._cameras.get(camera_id)
 
     async def add(self, name: str, rtsp_url: str,
-                  width: int = 1920, height: int = 1080, framerate: int = 15) -> Camera:
+                  width: int = 1920, height: int = 1080, framerate: int = 15,
+                  source_type: str = "rtsp", device_id: str = "") -> Camera:
         cid = str(uuid.uuid4())
         sid = f"cam_{cid[:8]}"
         port = self._next_port()
         cam = Camera(id=cid, name=name, rtsp_url=rtsp_url,
                      stream_id=sid, onvif_port=port,
-                     width=width, height=height, framerate=framerate)
+                     width=width, height=height, framerate=framerate,
+                     source_type=source_type, device_id=device_id)
         self._cameras[cid] = cam
         await self.save()
         return cam
