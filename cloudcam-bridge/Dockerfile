@@ -18,8 +18,14 @@ RUN case "${TARGETARCH}" in \
 COPY backend/requirements.txt /app/backend/requirements.txt
 RUN pip3 install --no-cache-dir --break-system-packages -r /app/backend/requirements.txt
 
+# Build frontend
+COPY frontend/package.json frontend/package-lock.json* /app/frontend/
+WORKDIR /app/frontend
+RUN npm install --production=false && npm cache clean --force
+COPY frontend/ /app/frontend/
+RUN npm run build && rm -rf node_modules src package.json package-lock.json
+
 COPY backend/ /app/backend/
-COPY frontend/dist/ /app/frontend/dist/
 
 COPY run.sh /run.sh
 RUN chmod +x /run.sh
