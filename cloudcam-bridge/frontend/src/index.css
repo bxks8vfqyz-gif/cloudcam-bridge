@@ -1,86 +1,82 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg-primary: #f2f2f7;
-  --bg-secondary: #ffffff;
-  --bg-tertiary: #f2f2f7;
-  --bg-grouped: #ffffff;
-  --text-primary: #1c1c1e;
-  --text-secondary: #3c3c43;
-  --text-tertiary: #8e8e93;
-  --text-quaternary: #c7c7cc;
-  --separator: rgba(60, 60, 67, 0.12);
-  --separator-opaque: #c6c6c8;
-  --fill: rgba(120, 120, 128, 0.2);
-  --fill-secondary: rgba(120, 120, 128, 0.16);
-  --accent: #007aff;
-  --accent-hover: #0066d6;
-  --green: #34c759;
-  --red: #ff3b30;
-  --orange: #ff9500;
-  --indigo: #5856d6;
-  --teal: #5ac8fa;
-  --system-bg-material: rgba(255, 255, 255, 0.72);
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
-  --shadow-md: 0 4px 14px rgba(0,0,0,0.06), 0 2px 6px rgba(0,0,0,0.04);
-  --shadow-lg: 0 10px 40px rgba(0,0,0,0.08), 0 2px 10px rgba(0,0,0,0.04);
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
-}
+  /* UniFi-inspired dark palette */
+  --bg-main: #111318;
+  --bg-elevated: #1a1d24;
+  --bg-card: #1e222a;
+  --bg-card-hover: #252930;
+  --bg-input: #13161c;
+  --bg-header: #16191f;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg-primary: #000000;
-    --bg-secondary: #1c1c1e;
-    --bg-tertiary: #2c2c2e;
-    --bg-grouped: #1c1c1e;
-    --text-primary: #ffffff;
-    --text-secondary: #ebebf5;
-    --text-tertiary: #8e8e93;
-    --text-quaternary: #636366;
-    --separator: rgba(84, 84, 88, 0.65);
-    --separator-opaque: #38383a;
-    --fill: rgba(120, 120, 128, 0.36);
-    --fill-secondary: rgba(120, 120, 128, 0.32);
-    --system-bg-material: rgba(28, 28, 30, 0.72);
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.2);
-    --shadow-md: 0 4px 14px rgba(0,0,0,0.25);
-    --shadow-lg: 0 10px 40px rgba(0,0,0,0.35);
-  }
+  --text-primary: #f4f5f6;
+  --text-secondary: #a1a7b3;
+  --text-tertiary: #6b7280;
+  --text-muted: #4b5563;
+
+  --border: rgba(255, 255, 255, 0.06);
+  --border-light: rgba(255, 255, 255, 0.04);
+  --border-input: rgba(255, 255, 255, 0.1);
+
+  --accent: #006fff;
+  --accent-hover: #0058cc;
+  --accent-subtle: rgba(0, 111, 255, 0.12);
+  --accent-text: #4d9aff;
+
+  --green: #00c853;
+  --green-subtle: rgba(0, 200, 83, 0.12);
+  --red: #f44336;
+  --red-subtle: rgba(244, 67, 54, 0.12);
+  --orange: #ff9800;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 1px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 1px rgba(0, 0, 0, 0.5);
+
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
-  background: var(--bg-primary);
+  font-family: var(--font);
+  background: var(--bg-main);
   color: var(--text-primary);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 input, button, textarea, select {
   font-family: inherit;
 }
 
-/* SF-style animations */
+::selection {
+  background: var(--accent);
+  color: white;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.96); }
-  to { opacity: 1; transform: scale(1); }
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes overlayIn {
   from { opacity: 0; }
   to { opacity: 1; }
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
 }
