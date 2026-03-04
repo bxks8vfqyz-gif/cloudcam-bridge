@@ -24,7 +24,7 @@ echo "[INFO] Starting CloudCam Bridge..."
 exec python3 /app/backend/main.py \
     --data-file "${DATA_FILE}" \
     --go2rtc-config "${GO2RTC_CONFIG}" \
-    --host "0.0.0.0" --port 8080 \
+    --host "0.0.0.0" --port 8099 \
     --onvif-username "${ONVIF_USERNAME}" \
     --onvif-password "${ONVIF_PASSWORD}" \
     --log-level "${LOG_LEVEL}"
