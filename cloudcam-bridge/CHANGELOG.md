@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.1.4
+- Add Force Update button in header — refresh repo and rebuild without leaving the UI
+- Show current version number in header
+- Enable Supervisor API access for in-app update management
+
 ## 2.1.3
 - Enable Apple autofill on Ring login form for easier credential entry
 - Fix Ring camera discovery (RingDevices NamedTuple access)

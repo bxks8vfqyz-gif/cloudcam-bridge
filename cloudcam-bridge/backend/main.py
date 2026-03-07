@@ -100,10 +100,78 @@ async def get_onvif(camera_id: str):
     if not cam: raise HTTPException(404, "Camera not found")
     return _onvif_info(cam)
 
+ADDON_VERSION = "2.1.4"
+ADDON_SLUG = "71440562_cloudcam-bridge"
+
 @app.get("/api/status")
 async def get_status():
     streams = await go2rtc.get_streams_status()
-    return {"status": "running", "cameras": len(store.all()), "go2rtc_streams": len(streams)}
+    return {"status": "running", "cameras": len(store.all()), "go2rtc_streams": len(streams), "version": ADDON_VERSION}
+
+@app.get("/api/version")
+async def get_version():
+    """Check if a newer version is available from the repo."""
+    import os
+    supervisor_token = os.environ.get("SUPERVISOR_TOKEN", "")
+    if not supervisor_token:
+        return {"current": ADDON_VERSION, "available": None, "update_available": False, "error": "Not running in HA"}
+    try:
+        loop = asyncio.get_event_loop()
+        resp = await loop.run_in_executor(None, lambda: requests.get(
+            f"http://supervisor/addons/{ADDON_SLUG}/info",
+            headers={"Authorization": f"Bearer {supervisor_token}"},
+            timeout=10
+        ))
+        data = resp.json().get("data", {})
+        return {
+            "current": data.get("version", ADDON_VERSION),
+            "available": data.get("version_latest", ADDON_VERSION),
+            "update_available": data.get("update_available", False),
+        }
+    except Exception as e:
+        return {"current": ADDON_VERSION, "available": None, "update_available": False, "error": str(e)}
+
+@app.post("/api/force-update")
+async def force_update():
+    """Refresh the repo, then rebuild the add-on with the latest code."""
+    import os
+    supervisor_token = os.environ.get("SUPERVISOR_TOKEN", "")
+    if not supervisor_token:
+        return {"success": False, "error": "Not running in Home Assistant"}
+    headers = {"Authorization": f"Bearer {supervisor_token}"}
+    try:
+        loop = asyncio.get_event_loop()
+        # Step 1: Refresh all store repos to pull latest git changes
+        logger.info("Force update: refreshing store repos...")
+        await loop.run_in_executor(None, lambda: requests.post(
+            "http://supervisor/store/reload",
+            headers=headers, timeout=30
+        ))
+        # Step 2: Check if update is available now
+        resp = await loop.run_in_executor(None, lambda: requests.get(
+            f"http://supervisor/addons/{ADDON_SLUG}/info",
+            headers=headers, timeout=10
+        ))
+        info = resp.json().get("data", {})
+        if info.get("update_available"):
+            # Step 3: Trigger the update
+            logger.info(f"Force update: updating from {info.get('version')} to {info.get('version_latest')}...")
+            await loop.run_in_executor(None, lambda: requests.post(
+                f"http://supervisor/addons/{ADDON_SLUG}/update",
+                headers=headers, timeout=300
+            ))
+            return {"success": True, "message": f"Updated to {info.get('version_latest')}. Add-on will restart."}
+        else:
+            # No version change — do a rebuild instead
+            logger.info("Force update: no new version, triggering rebuild...")
+            await loop.run_in_executor(None, lambda: requests.post(
+                f"http://supervisor/addons/{ADDON_SLUG}/rebuild",
+                headers=headers, timeout=300
+            ))
+            return {"success": True, "message": "Rebuild triggered. Add-on will restart."}
+    except Exception as e:
+        logger.error(f"Force update error: {e}")
+        return {"success": False, "error": str(e)}
 
 def _onvif_info(cam):
     return {"host": HOST_IP, "port": cam.onvif_port, "username": ONVIF_USERNAME,

@@ -720,6 +720,8 @@ export default function App() {
   const [editing, setEditing] = useState(null)
   const [onvifInfo, setOnvifInfo] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [updating, setUpdating] = useState(false)
+  const [updateMsg, setUpdateMsg] = useState('')
 
   const refresh = useCallback(async () => {
     const [camRes, statRes] = await Promise.all([get('/cameras'), get('/status')])
@@ -727,6 +729,18 @@ export default function App() {
   }, [])
 
   useEffect(() => { refresh() }, [refresh])
+
+  const handleForceUpdate = async () => {
+    if (!confirm('Force update will refresh the repo and rebuild. The add-on will restart. Continue?')) return
+    setUpdating(true); setUpdateMsg('')
+    const res = await post('/force-update', {})
+    setUpdating(false)
+    if (res.success) {
+      setUpdateMsg(res.message || 'Update triggered!')
+    } else {
+      setUpdateMsg(res.error || 'Update failed')
+    }
+  }
 
   const handleDelete = async id => { if (!confirm('Remove this camera?')) return; await del(`/cameras/${id}`); refresh() }
   const handleSave = (camera, onvif) => { refresh(); if (onvif && !editing) setOnvifInfo(onvif) }
@@ -756,15 +770,42 @@ export default function App() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {status && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <div style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 8px rgba(0,200,83,0.4)' }} />
-              <span style={{ fontSize: 12, color: 'var(--green)', fontWeight: 500 }}>Connected</span>
-            </div>
+            <>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>v{status.version || '?'}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 8px rgba(0,200,83,0.4)' }} />
+                <span style={{ fontSize: 12, color: 'var(--green)', fontWeight: 500 }}>Connected</span>
+              </div>
+            </>
           )}
+          <button onClick={handleForceUpdate} disabled={updating} title="Force update & rebuild" style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            padding: '4px 10px', background: updating ? 'rgba(167,139,250,0.2)' : 'transparent',
+            border: '1px solid rgba(167,139,250,0.3)', borderRadius: 'var(--radius-sm)',
+            cursor: updating ? 'not-allowed' : 'pointer', color: '#a78bfa',
+            fontSize: 11, fontWeight: 600, transition: 'all 0.15s',
+          }}>
+            <DownloadIcon size={12} color="#a78bfa" />
+            {updating ? 'Updating...' : 'Update'}
+          </button>
         </div>
       </header>
+
+      {/* Update message banner */}
+      {updateMsg && (
+        <div style={{
+          padding: '10px 24px', background: 'rgba(167,139,250,0.1)',
+          borderBottom: '1px solid rgba(167,139,250,0.2)',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        }}>
+          <span style={{ fontSize: 12, color: '#a78bfa', fontWeight: 500 }}>{updateMsg}</span>
+          <button onClick={() => setUpdateMsg('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', padding: 4 }}>
+            <XIcon size={14} />
+          </button>
+        </div>
+      )}
 
       {/* ── Content ── */}
       <div style={{ maxWidth: 760, margin: '0 auto', padding: '24px 24px 48px' }}>
