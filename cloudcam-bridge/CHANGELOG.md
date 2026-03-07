@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.1.5
+- Fix Ring camera streaming: correct go2rtc URL format from ring:// to ring:?device_id=&refresh_token=
+
 ## 2.1.4
 - Add Force Update button in header — refresh repo and rebuild without leaving the UI
 - Show current version number in header
