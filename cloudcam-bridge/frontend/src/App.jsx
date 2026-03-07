@@ -32,8 +32,27 @@ const LockIcon = (p) => <I {...p} d={<><rect x="3" y="11" width="18" height="11"
 
 function CopyBtn({ value }) {
   const [done, setDone] = useState(false)
+  const copyText = () => {
+    try {
+      // Try modern clipboard API first
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(value).then(() => {
+          setDone(true); setTimeout(() => setDone(false), 1800)
+        }).catch(() => fallbackCopy())
+      } else {
+        fallbackCopy()
+      }
+    } catch { fallbackCopy() }
+    function fallbackCopy() {
+      const ta = document.createElement('textarea')
+      ta.value = value; ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px'
+      document.body.appendChild(ta); ta.select()
+      try { document.execCommand('copy'); setDone(true); setTimeout(() => setDone(false), 1800) } catch {}
+      document.body.removeChild(ta)
+    }
+  }
   return (
-    <button onClick={() => { navigator.clipboard.writeText(value); setDone(true); setTimeout(() => setDone(false), 1800) }}
+    <button onClick={copyText}
       style={{
         background: 'none', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 4,
         color: done ? 'var(--green)' : 'var(--text-tertiary)',

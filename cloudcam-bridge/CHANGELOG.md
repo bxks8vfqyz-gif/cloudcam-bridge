@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.1.6
+- Fix copy button in ONVIF panel — works inside HA ingress iframe now
+
 ## 2.1.5
 - Fix Ring camera streaming: correct go2rtc URL format from ring:// to ring:?device_id=&refresh_token=
 
