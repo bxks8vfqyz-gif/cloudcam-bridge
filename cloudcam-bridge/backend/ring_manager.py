@@ -105,8 +105,9 @@ class RingManager:
             await ring.async_update_data()
 
             cameras = []
+            devices = ring.devices()
             # Doorbells
-            for device in ring.devices().get("doorbots", []):
+            for device in getattr(devices, "doorbots", []) or []:
                 cameras.append({
                     "device_id": str(device.id),
                     "name": device.name,
@@ -115,7 +116,7 @@ class RingManager:
                     "battery": getattr(device, "battery_life", None),
                 })
             # Stickup cams (includes indoor/outdoor/floodlight/spotlight)
-            for device in ring.devices().get("stickup_cams", []):
+            for device in getattr(devices, "stickup_cams", []) or []:
                 cameras.append({
                     "device_id": str(device.id),
                     "name": device.name,
@@ -123,6 +124,16 @@ class RingManager:
                     "model": getattr(device, "model", "Ring Camera"),
                     "battery": getattr(device, "battery_life", None),
                 })
+            # Also check authorized_doorbots
+            for device in getattr(devices, "authorized_doorbots", []) or []:
+                if not any(c["device_id"] == str(device.id) for c in cameras):
+                    cameras.append({
+                        "device_id": str(device.id),
+                        "name": device.name,
+                        "type": "doorbell",
+                        "model": getattr(device, "model", "Ring Doorbell"),
+                        "battery": getattr(device, "battery_life", None),
+                    })
 
             logger.info(f"Ring: discovered {len(cameras)} camera(s)")
             return cameras
