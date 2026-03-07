@@ -601,18 +601,16 @@ function RingDiscovery({ onAdd }) {
       {/* Auth form */}
       {showAuth && !authenticated && (
         <div style={{ padding: '16px' }}>
-          <form autoComplete="off" onSubmit={e => { e.preventDefault(); handleAuth() }}>
-            <input type="text" name="fakeuser" style={{ position: 'absolute', opacity: 0, height: 0, width: 0, padding: 0, border: 'none' }} tabIndex={-1} />
-            <input type="password" name="fakepass" style={{ position: 'absolute', opacity: 0, height: 0, width: 0, padding: 0, border: 'none' }} tabIndex={-1} />
+          <form autoComplete="on" onSubmit={e => { e.preventDefault(); handleAuth() }}>
 
             <div style={{ marginBottom: 10 }}>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Email</label>
-              <input type="text" value={authForm.username} onChange={af('username')} placeholder="ring@example.com" autoComplete="off" style={inputStyle}
+              <label htmlFor="ring-email" style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Email</label>
+              <input id="ring-email" name="email" type="email" value={authForm.username} onChange={af('username')} placeholder="ring@example.com" autoComplete="username email" style={inputStyle}
                 onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
             </div>
             <div style={{ marginBottom: 10 }}>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Password</label>
-              <input type="password" value={authForm.password} onChange={af('password')} placeholder="Ring password" autoComplete="new-password" style={inputStyle}
+              <label htmlFor="ring-password" style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Password</label>
+              <input id="ring-password" name="password" type="password" value={authForm.password} onChange={af('password')} placeholder="Ring password" autoComplete="current-password" style={inputStyle}
                 onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
             </div>
             {needs2fa && (
