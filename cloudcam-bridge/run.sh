@@ -14,9 +14,9 @@ SCRYPTED_TOKEN=$(jq -r '.scrypted_token // empty' "$OPTIONS_FILE")
 
 [ ! -f "${DATA_FILE}" ] && echo '{"cameras":[]}' > "${DATA_FILE}"
 
-if [ ! -f "${GO2RTC_CONFIG}" ]; then
-  printf 'api:\n  listen: 127.0.0.1:1984\nrtsp:\n  listen: 127.0.0.1:8554\nlog:\n  level: warn\nstreams: {}\n' > "${GO2RTC_CONFIG}"
-fi
+# Always regenerate go2rtc base config (preserves streams from Python backend)
+# This ensures log level and API settings stay current across upgrades
+printf 'api:\n  listen: 127.0.0.1:1984\nrtsp:\n  listen: 127.0.0.1:8554\nlog:\n  level: info\nstreams: {}\n' > "${GO2RTC_CONFIG}"
 
 echo "[INFO] Starting go2rtc..."
 go2rtc -config "${GO2RTC_CONFIG}" &

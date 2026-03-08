@@ -100,7 +100,7 @@ async def get_onvif(camera_id: str):
     if not cam: raise HTTPException(404, "Camera not found")
     return _onvif_info(cam)
 
-ADDON_VERSION = "2.1.6"
+ADDON_VERSION = "2.1.7"
 ADDON_SLUG = "71440562_cloudcam-bridge"
 
 @app.get("/api/status")

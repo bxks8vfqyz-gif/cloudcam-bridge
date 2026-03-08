@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.1.7
+- **Fix Ring camera black stream** — upgraded go2rtc from v1.9.4 to v1.9.14 (Ring support was added in v1.9.11)
+- Improved go2rtc logging from warn to info level for better diagnostics
+
 ## 2.1.6
 - Fix copy button in ONVIF panel — works inside HA ingress iframe now
 

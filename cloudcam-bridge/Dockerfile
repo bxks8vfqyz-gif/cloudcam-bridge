@@ -4,7 +4,7 @@ FROM ${BUILD_FROM}
 RUN apk add --no-cache python3 py3-pip ffmpeg curl bash nodejs npm jq
 
 # Install go2rtc
-ARG GO2RTC_VERSION=1.9.4
+ARG GO2RTC_VERSION=1.9.14
 ARG BUILD_ARCH=amd64
 RUN case "${BUILD_ARCH}" in \
     "amd64")    GO2RTC_ARCH="amd64" ;; \
