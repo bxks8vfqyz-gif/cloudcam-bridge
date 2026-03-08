@@ -529,7 +529,7 @@ function RingDiscovery({ onAdd }) {
 
   const handleAdd = async (cam) => {
     setAdding(p => ({ ...p, [cam.device_id]: true }))
-    const body = { name: cam.name, source_type: 'ring', device_id: cam.device_id, width: 1920, height: 1080, framerate: 15 }
+    const body = { name: cam.name, source_type: 'ring', device_id: cam.device_id, hardware_id: cam.hardware_id || '', width: 1920, height: 1080, framerate: 15 }
     const res = await post('/cameras', body)
     setAdding(p => ({ ...p, [cam.device_id]: false }))
     if (res.camera) {

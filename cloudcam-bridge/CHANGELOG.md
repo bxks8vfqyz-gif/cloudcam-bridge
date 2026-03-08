@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.0
+- **Fix Ring streaming** — go2rtc ring: requires 3 params: refresh_token, camera_id (numeric), AND device_id (hardware MAC string). Now all 3 are correctly included in the stream URL.
+- Discovery now captures both numeric ID and hardware device ID from Ring API
+
 ## 2.1.9
 - **Fix Ring stream "wrong query" error** — go2rtc ring: requires the refresh_token in the config's ring: section, not the stream URL. Stream URLs now use ring://DEVICE_ID format.
 

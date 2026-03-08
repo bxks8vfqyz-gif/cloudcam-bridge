@@ -1,7 +1,7 @@
 """Ring camera authentication and discovery using ring-doorbell library.
 go2rtc handles the actual video streaming via its built-in ring:// protocol."""
 
-import json, logging, os
+import json, logging, os, urllib.parse
 from pathlib import Path
 from typing import Optional, List, Dict
 
@@ -106,34 +106,26 @@ class RingManager:
 
             cameras = []
             devices = ring.devices()
-            # Doorbells
-            for device in getattr(devices, "doorbots", []) or []:
-                cameras.append({
-                    "device_id": str(device.id),
+            def _cam_dict(device, cam_type):
+                return {
+                    "device_id": str(device.id),           # numeric ID → go2rtc camera_id
+                    "hardware_id": str(getattr(device, "device_id", "") or ""),  # MAC/hw ID → go2rtc device_id
                     "name": device.name,
-                    "type": "doorbell",
-                    "model": getattr(device, "model", "Ring Doorbell"),
-                    "battery": getattr(device, "battery_life", None),
-                })
-            # Stickup cams (includes indoor/outdoor/floodlight/spotlight)
-            for device in getattr(devices, "stickup_cams", []) or []:
-                cameras.append({
-                    "device_id": str(device.id),
-                    "name": device.name,
-                    "type": "camera",
+                    "type": cam_type,
                     "model": getattr(device, "model", "Ring Camera"),
                     "battery": getattr(device, "battery_life", None),
-                })
+                }
+
+            # Doorbells
+            for device in getattr(devices, "doorbots", []) or []:
+                cameras.append(_cam_dict(device, "doorbell"))
+            # Stickup cams (includes indoor/outdoor/floodlight/spotlight)
+            for device in getattr(devices, "stickup_cams", []) or []:
+                cameras.append(_cam_dict(device, "camera"))
             # Also check authorized_doorbots
             for device in getattr(devices, "authorized_doorbots", []) or []:
                 if not any(c["device_id"] == str(device.id) for c in cameras):
-                    cameras.append({
-                        "device_id": str(device.id),
-                        "name": device.name,
-                        "type": "doorbell",
-                        "model": getattr(device, "model", "Ring Doorbell"),
-                        "battery": getattr(device, "battery_life", None),
-                    })
+                    cameras.append(_cam_dict(device, "doorbell"))
 
             logger.info(f"Ring: discovered {len(cameras)} camera(s)")
             return cameras
@@ -142,12 +134,13 @@ class RingManager:
             logger.error(f"Ring discovery error: {e}")
             raise
 
-    def get_go2rtc_url(self, device_id: str) -> str:
-        """Build go2rtc ring:// stream URL for a device.
-        The refresh_token is stored separately in go2rtc config's ring: section."""
+    def get_go2rtc_url(self, camera_id: str, hardware_id: str) -> str:
+        """Build go2rtc ring: source URL with all 3 required params:
+        refresh_token, camera_id (numeric), and device_id (hardware MAC string)."""
         if not self._refresh_token:
             raise ValueError("Not authenticated with Ring")
-        return f"ring://{device_id}"
+        token = urllib.parse.quote(self._refresh_token, safe="")
+        return f"ring:?refresh_token={token}&camera_id={camera_id}&device_id={hardware_id}"
 
     def disconnect(self):
         """Remove stored Ring credentials."""

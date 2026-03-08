@@ -26,13 +26,10 @@ _onvif_procs = {}
 async def lifespan(app):
     logger.info("CloudCam Bridge starting...")
     await store.load()
-    # Write Ring token into go2rtc config first (before streams so reload sees it)
-    if ring and ring.is_authenticated:
-        await go2rtc.set_ring_token(ring.refresh_token)
     streams = {}
     for c in store.all():
-        if c.source_type == "ring" and c.device_id and ring and ring.is_authenticated:
-            streams[c.stream_id] = f"ring://{c.device_id}"
+        if c.source_type == "ring" and c.device_id and c.hardware_id and ring and ring.is_authenticated:
+            streams[c.stream_id] = ring.get_go2rtc_url(c.device_id, c.hardware_id)
         else:
             streams[c.stream_id] = c.rtsp_url
     if streams: await go2rtc.set_all_streams(streams)
@@ -48,7 +45,7 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 
 class AddCameraBody(BaseModel):
     name: str; rtsp_url: str = ""; width: int = 1920; height: int = 1080; framerate: int = 15
-    source_type: str = "rtsp"; device_id: str = ""
+    source_type: str = "rtsp"; device_id: str = ""; hardware_id: str = ""
 
 class UpdateCameraBody(BaseModel):
     name: Optional[str] = None; rtsp_url: Optional[str] = None
@@ -66,11 +63,12 @@ async def add_camera(body: AddCameraBody):
             raise HTTPException(400, "Ring not authenticated")
         if not body.device_id:
             raise HTTPException(400, "device_id required for Ring cameras")
-        # Write refresh token to go2rtc config ring: section before adding stream
-        await go2rtc.set_ring_token(ring.refresh_token)
-        rtsp_url = ring.get_go2rtc_url(body.device_id)  # ring://DEVICE_ID
+        if not body.hardware_id:
+            raise HTTPException(400, "hardware_id required for Ring cameras")
+        rtsp_url = ring.get_go2rtc_url(body.device_id, body.hardware_id)
     cam = await store.add(name=body.name, rtsp_url=rtsp_url, width=body.width, height=body.height,
-                          framerate=body.framerate, source_type=body.source_type, device_id=body.device_id)
+                          framerate=body.framerate, source_type=body.source_type,
+                          device_id=body.device_id, hardware_id=body.hardware_id)
     await go2rtc.add_stream(cam.stream_id, rtsp_url)
     await _start_onvif(cam)
     logger.info(f"Added camera '{cam.name}' ({body.source_type}) ONVIF port {cam.onvif_port}")
@@ -105,7 +103,7 @@ async def get_onvif(camera_id: str):
     if not cam: raise HTTPException(404, "Camera not found")
     return _onvif_info(cam)
 
-ADDON_VERSION = "2.1.9"
+ADDON_VERSION = "2.2.0"
 ADDON_SLUG = "71440562_cloudcam-bridge"
 
 @app.get("/api/status")
