@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.1.9
+- **Fix Ring stream "wrong query" error** — go2rtc ring: requires the refresh_token in the config's ring: section, not the stream URL. Stream URLs now use ring://DEVICE_ID format.
+
 ## 2.1.8
 - **Fix Ring/Scrypted black stream** — go2rtc RTSP now listens on all interfaces (0.0.0.0:8554) so UniFi Protect can actually reach it from the network
 - ONVIF server now reports the real host IP in stream URLs instead of 127.0.0.1

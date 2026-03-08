@@ -34,6 +34,14 @@ class Go2RTCManager:
         await self.save_config(config)
         await self._reload()
 
+    async def set_ring_token(self, refresh_token: str):
+        """Write Ring refresh_token into go2rtc config's ring: section.
+        Must be called before adding ring:// streams so go2rtc can authenticate."""
+        config = await self.load_config()
+        config["ring"] = {"refresh_token": refresh_token}
+        await self.save_config(config)
+        logger.info("go2rtc: saved Ring refresh token to config")
+
     async def set_all_streams(self, streams: Dict[str, str]):
         config = await self.load_config()
         config["streams"] = streams

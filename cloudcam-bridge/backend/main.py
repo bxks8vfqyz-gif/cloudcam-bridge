@@ -26,10 +26,13 @@ _onvif_procs = {}
 async def lifespan(app):
     logger.info("CloudCam Bridge starting...")
     await store.load()
+    # Write Ring token into go2rtc config first (before streams so reload sees it)
+    if ring and ring.is_authenticated:
+        await go2rtc.set_ring_token(ring.refresh_token)
     streams = {}
     for c in store.all():
         if c.source_type == "ring" and c.device_id and ring and ring.is_authenticated:
-            streams[c.stream_id] = ring.get_go2rtc_url(c.device_id)
+            streams[c.stream_id] = f"ring://{c.device_id}"
         else:
             streams[c.stream_id] = c.rtsp_url
     if streams: await go2rtc.set_all_streams(streams)
@@ -57,13 +60,15 @@ async def list_cameras(): return {"cameras": [c.to_dict() for c in store.all()]}
 @app.post("/api/cameras")
 async def add_camera(body: AddCameraBody):
     rtsp_url = body.rtsp_url
-    # For Ring cameras, build the go2rtc ring:// URL
+    # For Ring cameras, build the go2rtc ring:// URL and store token in config
     if body.source_type == "ring":
         if not ring or not ring.is_authenticated:
             raise HTTPException(400, "Ring not authenticated")
         if not body.device_id:
             raise HTTPException(400, "device_id required for Ring cameras")
-        rtsp_url = ring.get_go2rtc_url(body.device_id)
+        # Write refresh token to go2rtc config ring: section before adding stream
+        await go2rtc.set_ring_token(ring.refresh_token)
+        rtsp_url = ring.get_go2rtc_url(body.device_id)  # ring://DEVICE_ID
     cam = await store.add(name=body.name, rtsp_url=rtsp_url, width=body.width, height=body.height,
                           framerate=body.framerate, source_type=body.source_type, device_id=body.device_id)
     await go2rtc.add_stream(cam.stream_id, rtsp_url)
@@ -100,7 +105,7 @@ async def get_onvif(camera_id: str):
     if not cam: raise HTTPException(404, "Camera not found")
     return _onvif_info(cam)
 
-ADDON_VERSION = "2.1.8"
+ADDON_VERSION = "2.1.9"
 ADDON_SLUG = "71440562_cloudcam-bridge"
 
 @app.get("/api/status")

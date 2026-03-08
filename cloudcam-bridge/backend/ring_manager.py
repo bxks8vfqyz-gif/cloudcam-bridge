@@ -143,10 +143,11 @@ class RingManager:
             raise
 
     def get_go2rtc_url(self, device_id: str) -> str:
-        """Build go2rtc ring: source URL for a device."""
+        """Build go2rtc ring:// stream URL for a device.
+        The refresh_token is stored separately in go2rtc config's ring: section."""
         if not self._refresh_token:
             raise ValueError("Not authenticated with Ring")
-        return f"ring:?device_id={device_id}&refresh_token={self._refresh_token}"
+        return f"ring://{device_id}"
 
     def disconnect(self):
         """Remove stored Ring credentials."""
