@@ -6,8 +6,9 @@ logger = logging.getLogger(__name__)
 GO2RTC_API = "http://127.0.0.1:1984"
 
 class Go2RTCManager:
-    def __init__(self, config_path: str):
+    def __init__(self, config_path: str, host_ip: str = "127.0.0.1"):
         self.config_path = config_path
+        self.host_ip = host_ip
 
     async def load_config(self) -> dict:
         try:
@@ -40,7 +41,7 @@ class Go2RTCManager:
         await self._reload()
 
     def get_rtsp_url(self, stream_id: str) -> str:
-        return f"rtsp://127.0.0.1:8554/{stream_id}"
+        return f"rtsp://{self.host_ip}:8554/{stream_id}"
 
     async def _reload(self):
         try:

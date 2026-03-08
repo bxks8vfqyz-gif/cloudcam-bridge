@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.1.8
+- **Fix Ring/Scrypted black stream** — go2rtc RTSP now listens on all interfaces (0.0.0.0:8554) so UniFi Protect can actually reach it from the network
+- ONVIF server now reports the real host IP in stream URLs instead of 127.0.0.1
+
 ## 2.1.7
 - **Fix Ring camera black stream** — upgraded go2rtc from v1.9.4 to v1.9.14 (Ring support was added in v1.9.11)
 - Improved go2rtc logging from warn to info level for better diagnostics

@@ -16,7 +16,7 @@ SCRYPTED_TOKEN=$(jq -r '.scrypted_token // empty' "$OPTIONS_FILE")
 
 # Always regenerate go2rtc base config (preserves streams from Python backend)
 # This ensures log level and API settings stay current across upgrades
-printf 'api:\n  listen: 127.0.0.1:1984\nrtsp:\n  listen: 127.0.0.1:8554\nlog:\n  level: info\nstreams: {}\n' > "${GO2RTC_CONFIG}"
+printf 'api:\n  listen: 127.0.0.1:1984\nrtsp:\n  listen: 0.0.0.0:8554\nlog:\n  level: info\nstreams: {}\n' > "${GO2RTC_CONFIG}"
 
 echo "[INFO] Starting go2rtc..."
 go2rtc -config "${GO2RTC_CONFIG}" &

@@ -100,7 +100,7 @@ async def get_onvif(camera_id: str):
     if not cam: raise HTTPException(404, "Camera not found")
     return _onvif_info(cam)
 
-ADDON_VERSION = "2.1.7"
+ADDON_VERSION = "2.1.8"
 ADDON_SLUG = "71440562_cloudcam-bridge"
 
 @app.get("/api/status")
@@ -280,7 +280,7 @@ if __name__ == "__main__":
     ONVIF_PASSWORD = args.onvif_password
     SCRYPTED_ADDRESS = args.scrypted_address
     SCRYPTED_TOKEN = args.scrypted_token
-    go2rtc = Go2RTCManager(args.go2rtc_config)
+    go2rtc = Go2RTCManager(args.go2rtc_config, HOST_IP)
     store = CameraStore(args.data_file)
     ring = RingManager()
     uvicorn.run(app, host=args.host, port=args.port, log_level=args.log_level.lower())
